@@ -1,0 +1,50 @@
+using InvoiceDesigner.Data;
+using Microsoft.EntityFrameworkCore;
+
+
+var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestLineSize = 200 * 1024;
+});
+
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")
+    )
+);
+
+
+// Add services to the container.
+builder.Services.AddControllersWithViews();
+builder.Services.AddSession();
+
+
+var app = builder.Build();
+
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
+}
+
+
+//app.UseHttpsRedirection();
+
+app.UseStaticFiles();
+
+app.UseRouting();
+app.UseSession();
+
+app.UseAuthorization();
+
+
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Designer}/{action=Index}/{id?}"
+);
+
+
+app.Run();

@@ -1,0 +1,860 @@
+@using System.Text.Json
+
+@{
+    string? incomingInvoiceBase64 =
+        ViewData["IncomingInvoiceBase64"] as string;
+
+    string? incomingInvoiceError =
+        ViewData["IncomingInvoiceError"] as string;
+}
+
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Invoice Report Designer</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/grapesjs/dist/css/grapes.min.css">
+    <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="stylesheet" href="~/css/designer.css" />
+
+    <style>
+            .dx-file-menu {
+                position: relative;
+                display: inline-flex;
+            }
+
+            .dx-file-menu-popup {
+                position: absolute;
+                top: calc(100% + 5px);
+                left: 0;
+                z-index: 5000;
+                min-width: 170px;
+                padding: 5px;
+                display: none;
+                background: #fff;
+                border: 1px solid #b8c2cf;
+                border-radius: 6px;
+                box-shadow: 0 10px 25px rgba(15, 23, 42, .18);
+            }
+
+            .dx-file-menu.open .dx-file-menu-popup {
+                display: block;
+            }
+
+            .dx-file-menu-item {
+                width: 100%;
+                height: 32px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 0 9px;
+                border: 0;
+                border-radius: 4px;
+                background: transparent;
+                color: #263445;
+                font-size: 12px;
+                font-weight: 600;
+                text-align: left;
+                cursor: pointer;
+            }
+
+                .dx-file-menu-item:hover {
+                    background: #eff6ff;
+                    color: #1d4ed8;
+                }
+
+
+            /* =====================================================
+                                                               MODERN LEFT TOOLBOX
+                                                               ===================================================== */
+            .dx-left-panel {
+                background: #f4f7fb;
+                border-right: 1px solid #d7deea;
+            }
+
+            .dx-left-tabs {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 6px;
+                padding: 8px;
+                background: #ffffff;
+                border-bottom: 1px solid #dce3ed;
+            }
+
+            .dx-left-tab {
+                height: 34px;
+                border: 1px solid transparent;
+                border-radius: 7px;
+                background: transparent;
+                color: #536174;
+                font-size: 12px;
+                font-weight: 700;
+                cursor: pointer;
+                transition: background .18s ease, color .18s ease, box-shadow .18s ease;
+            }
+
+                .dx-left-tab:hover {
+                    background: #f1f6ff;
+                    color: #1f5fd1;
+                }
+
+                .dx-left-tab.active {
+                    background: #eaf2ff;
+                    border-color: #cfe0ff;
+                    color: #1557c0;
+                    box-shadow: inset 0 -2px 0 #2f6fed;
+                }
+
+            .dx-toolbox-card {
+                margin: 0;
+                border: 0;
+                border-radius: 0;
+                box-shadow: none;
+                background: transparent;
+            }
+
+            .dx-toolbox-view-buttons {
+                display: flex;
+                justify-content: flex-end;
+                gap: 5px;
+                padding: 8px 10px 7px;
+                background: #ffffff;
+                border-bottom: 1px solid #e2e8f0;
+            }
+
+            .dx-mini-view {
+                width: 30px;
+                height: 28px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border: 1px solid #d5deea;
+                border-radius: 6px;
+                background: #ffffff;
+                color: #64748b;
+                cursor: pointer;
+                transition: all .16s ease;
+            }
+
+                .dx-mini-view:hover {
+                    border-color: #9bbcf7;
+                    color: #2563eb;
+                    background: #f5f9ff;
+                }
+
+                .dx-mini-view.active {
+                    border-color: #8db1f3;
+                    color: #1d4ed8;
+                    background: #eaf2ff;
+                    box-shadow: 0 1px 3px rgba(37, 99, 235, .15);
+                }
+
+            #blocks,
+            #savedReportsPanel,
+            #datasource-panel {
+                background: transparent;
+            }
+
+                #blocks .gjs-block-category {
+                    margin: 8px 8px 10px;
+                    overflow: hidden;
+                    border: 1px solid #dbe3ee;
+                    border-radius: 9px;
+                    background: #ffffff;
+                    box-shadow: 0 2px 7px rgba(15, 23, 42, .05);
+                }
+
+                #blocks .gjs-title,
+                .dx-accordion-title.custom-accordion-title {
+                    position: relative;
+                    min-height: 37px;
+                    display: flex;
+                    align-items: center;
+                    padding: 0 34px 0 14px !important;
+                    margin: 8px 8px 0;
+                    border: 1px solid #dbe3ee;
+                    border-radius: 9px 9px 0 0;
+                    background: linear-gradient(180deg, #ffffff 0%, #f7f9fc 100%) !important;
+                    color: #26364a !important;
+                    font-size: 11px !important;
+                    font-weight: 800 !important;
+                    letter-spacing: .055em;
+                    text-transform: uppercase;
+                    cursor: pointer;
+                    box-sizing: border-box;
+                }
+
+                #blocks .gjs-block-category .gjs-title {
+                    margin: 0;
+                    border: 0;
+                    border-radius: 0;
+                }
+
+                #blocks .gjs-title::after,
+                .dx-accordion-title.custom-accordion-title::after {
+                    content: "⌄";
+                    position: absolute;
+                    right: 13px;
+                    top: 50%;
+                    transform: translateY(-52%) rotate(0deg);
+                    color: #65758b;
+                    font-size: 15px;
+                    transition: transform .18s ease;
+                }
+
+                #blocks .gjs-block-category.closed .gjs-title::after,
+                .dx-accordion-title.custom-accordion-title.closed::after {
+                    transform: translateY(-52%) rotate(-90deg);
+                }
+
+                #blocks .gjs-blocks-c,
+                .dx-accordion-body {
+                    padding: 9px !important;
+                    border-top: 1px solid #edf1f6;
+                    background: #fbfcfe;
+                    transition: opacity .18s ease;
+                }
+
+            .dx-accordion-body {
+                margin: 0 8px 10px;
+                border: 1px solid #dbe3ee;
+                border-top: 0;
+                border-radius: 0 0 9px 9px;
+            }
+
+                #blocks .gjs-blocks-c.closed,
+                .dx-accordion-body.closed {
+                    display: none !important;
+                }
+
+            #blocks .gjs-blocks-c {
+                display: grid !important;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+            }
+
+            #blocks .gjs-block {
+                width: auto !important;
+                min-height: 72px;
+                margin: 0 !important;
+                padding: 10px 7px !important;
+                display: flex !important;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 7px;
+                border: 1px solid #d7e0ec !important;
+                border-radius: 8px !important;
+                background: #ffffff !important;
+                color: #27364a !important;
+                box-shadow: 0 1px 2px rgba(15, 23, 42, .04) !important;
+                cursor: grab;
+                transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background .16s ease;
+                box-sizing: border-box;
+            }
+
+                #blocks .gjs-block:hover {
+                    transform: translateY(-2px);
+                    border-color: #8db1f3 !important;
+                    background: #f8fbff !important;
+                    color: #174ea6 !important;
+                    box-shadow: 0 6px 14px rgba(37, 99, 235, .12) !important;
+                }
+
+                #blocks .gjs-block:active {
+                    cursor: grabbing;
+                    transform: scale(.98);
+                }
+
+            #blocks .gjs-block__media {
+                min-height: 24px;
+                margin: 0 !important;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #2563eb;
+                font-size: 20px !important;
+                line-height: 1;
+            }
+
+            #blocks .gjs-block-label {
+                margin: 0 !important;
+                color: inherit !important;
+                font-size: 11px !important;
+                line-height: 1.25;
+                font-weight: 700;
+                text-align: center;
+            }
+
+            /* Liste görünümü */
+            #blocks.toolbox-list-view .gjs-blocks-c {
+                grid-template-columns: 1fr;
+            }
+
+            #blocks.toolbox-list-view .gjs-block {
+                min-height: 48px;
+                flex-direction: row;
+                justify-content: flex-start;
+                padding: 8px 12px !important;
+                gap: 11px;
+            }
+
+            #blocks.toolbox-list-view .gjs-block__media {
+                width: 26px;
+                min-width: 26px;
+                font-size: 17px !important;
+            }
+
+            #blocks.toolbox-list-view .gjs-block-label {
+                text-align: left;
+                font-size: 12px !important;
+            }
+
+            .report-template-loading {
+                padding: 14px;
+                color: #7a8798;
+                font-size: 11px;
+                text-align: center;
+            }
+
+            #componentsTab {
+                scrollbar-color: #b7c3d2 transparent;
+                scrollbar-width: thin;
+            }
+
+                #componentsTab::-webkit-scrollbar {
+                    width: 7px;
+                }
+
+                #componentsTab::-webkit-scrollbar-thumb {
+                    background: #bdc8d5;
+                    border-radius: 10px;
+                }
+    </style>
+
+</head>
+<body>
+
+    <div class="dx-designer-shell">
+
+        <header class="dx-topbar modern-topbar">
+            <div class="dx-brand modern-brand">
+                <span class="dx-brand-icon modern-brand-icon">ZR</span>
+                <div class="modern-brand-copy">
+                    <div class="dx-title">Zensoft Report Designer</div>
+                    <div class="dx-subtitle">Fatura ve rapor tasarım çalışma alanı</div>
+                </div>
+            </div>
+
+            <div class="dx-actions modern-toolbar dx-command-toolbar" aria-label="Tasarım araç çubuğu">
+                <div class="modern-toolbar-group modern-file-group">
+                    <div class="dx-file-menu" id="fileMenu">
+                        <button type="button"
+                                class="dx-btn dx-file-menu-button modern-file-button"
+                                id="fileMenuButton"
+                                aria-haspopup="true"
+                                aria-expanded="false">
+                            <span class="modern-button-icon">☰</span>
+                            <span>Dosya</span>
+                            <span class="modern-button-caret">⌄</span>
+                        </button>
+                        <div class="dx-file-menu-popup" id="fileMenuPopup" role="menu">
+                            <button type="button" class="dx-file-menu-item" data-file-action="new" role="menuitem">📄 Yeni Rapor</button>
+                            <button type="button" class="dx-file-menu-item" data-file-action="save" role="menuitem">💾 Kaydet</button>
+                            <button type="button" class="dx-file-menu-item" data-file-action="save-as" role="menuitem">💾 Farklı Kaydet</button>
+                        </div>
+                    </div>
+                </div>
+
+                <span class="modern-toolbar-divider" aria-hidden="true"></span>
+
+                <div id="pageSettingsToolbar" class="dx-page-settings-toolbar modern-page-group" aria-label="Sayfa ayarları">
+                    <label class="modern-select-field" title="Sayfa boyutu">
+                        <span class="modern-select-icon">▤</span>
+                        <select id="pageSizeSelect" class="dx-toolbar-select dx-page-size-select">
+                            <option value="A4">A4</option>
+                            <option value="A5">A5</option>
+                            <option value="Letter">Letter</option>
+                            <option value="Legal">Legal</option>
+                        </select>
+                    </label>
+                    <label class="modern-select-field" title="Sayfa yönü">
+                        <span class="modern-select-icon">↕</span>
+                        <select id="pageOrientationSelect" class="dx-toolbar-select dx-page-orientation-select">
+                            <option value="portrait">Dikey</option>
+                            <option value="landscape">Yatay</option>
+                        </select>
+                    </label>
+                </div>
+
+                <span class="modern-toolbar-divider" aria-hidden="true"></span>
+
+                <div class="modern-mode-group" aria-label="Görünüm modu">
+                    <button type="button" id="designTabBtn" class="dx-btn dx-tab-btn modern-mode-button active" onclick="showDesignMode()">
+                        <span>✎</span><span>Design</span>
+                    </button>
+                    <button type="button" id="previewTabBtn" class="dx-btn dx-tab-btn modern-mode-button" onclick="showPreviewMode()">
+                        <span>◉</span><span>Preview</span>
+                    </button>
+                    <button type="button" class="dx-btn modern-pdf-button" onclick="downloadPdf()">
+                        <span>⇩</span><span>PDF</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main id="editor-wrapper" class="dx-main">
+
+            <aside id="left-panel" class="dx-left-panel dx-left-tabs-panel">
+                <div class="dx-left-tabs">
+                    <button type="button" class="dx-left-tab active" data-target="componentsTab">Components</button>
+                    <button type="button" class="dx-left-tab" data-target="explorerTab">Explorer</button>
+                </div>
+
+                <div id="componentsTab" class="dx-left-tab-content active">
+                    <section class="dx-panel-card dx-toolbox-card">
+                        <div class="toolbox-modern-header">
+                            <div>
+                                <div class="toolbox-modern-kicker">DESIGN TOOLBOX</div>
+                                <h3>Components</h3>
+                                <p>Öğeyi sürükleyip rapor sayfasına bırakın.</p>
+                            </div>
+                            <span class="toolbox-modern-badge">UI</span>
+                        </div>
+
+                        <div class="toolbox-modern-search-wrap">
+                            <span class="toolbox-search-icon">⌕</span>
+                            <input id="toolboxSearchInput" type="search" placeholder="Bileşen ara..." autocomplete="off" />
+                            <button type="button" id="toolboxSearchClear" class="toolbox-search-clear" title="Aramayı temizle">×</button>
+                        </div>
+
+                        <div class="dx-toolbox-view-buttons">
+                            <span class="toolbox-view-label">Görünüm</span>
+                            <button type="button" class="dx-mini-view active" title="Liste görünümü">☰</button>
+                            <button type="button" class="dx-mini-view" title="Grid görünümü">▦</button>
+                        </div>
+
+                        <div id="blocks" class="dx-toolbox-blocks"></div>
+
+                        <div class="dx-accordion-title open custom-accordion-title">RAPORLAR</div>
+                        <div id="savedReportsPanel" class="dx-accordion-body report-template-panel">
+                            <div class="report-template-loading">Şablonlar yükleniyor...</div>
+                        </div>
+
+                        <div class="dx-accordion-title open datasource-title custom-accordion-title">DATA SOURCE</div>
+                        <div id="datasource-panel" class="dx-accordion-body"></div>
+                    </section>
+                </div>
+
+                <div id="explorerTab" class="dx-left-tab-content">
+                    <section class="dx-panel-card report-explorer-card">
+                        <div class="dx-panel-title">REPORT EXPLORER</div>
+                        <div id="report-explorer-panel"></div>
+                    </section>
+                </div>
+            </aside>
+
+            <section class="dx-center">
+                <div class="dx-workarea">
+                    <nav id="bandNavigator" class="dx-band-navigator" aria-label="Rapor bölümleri"></nav>
+                    <div id="gjs" class="dx-gjs-host"></div>
+                    <div id="preview-surface" class="preview-surface" style="display:none;">
+                        <div class="preview-loading">Preview hazırlanıyor...</div>
+                    </div>
+                </div>
+            </section>
+
+            <aside id="right-panel" class="dx-properties dx-properties-step4">
+                <section class="dx-panel-card prop-card-main">
+                    <div class="dx-panel-title properties-panel-heading">
+                        <span class="properties-heading-icon">⚙</span>
+                        <span class="properties-heading-copy">
+                            <strong>Properties</strong>
+                            <small>Seçili öğeyi özelleştirin</small>
+                        </span>
+                    </div>
+
+                    <div class="dx-prop-header">
+                        <select id="propSelected" class="property-input compact" disabled>
+                            <option>Seçili eleman yok</option>
+                        </select>
+                        <input id="propSearch" class="property-input compact prop-search" type="text" placeholder="Özelliklerde ara..." />
+                    </div>
+
+                    <div class="prop-group open" data-group="actions">
+                        <button type="button" class="prop-group-title">▾ ACTIONS</button>
+                        <div class="prop-group-body">
+                            <div class="property-action-grid">
+                                <button type="button" id="duplicateComponentBtn" class="property-action-btn" title="Seçili elemanı çoğalt">
+                                    <span class="property-action-icon">⧉</span><span>Çoğalt</span>
+                                </button>
+                                <button type="button" id="deleteComponentBtn" class="property-action-btn danger" title="Seçili elemanı sil">
+                                    <span class="property-action-icon">⌫</span><span>Sil</span>
+                                </button>
+                                <button type="button" id="toggleLockBtn" class="property-action-btn" title="Taşımayı ve yeniden boyutlandırmayı kilitle">
+                                    <span class="property-action-icon">🔒</span><span class="property-action-text">Kilitle</span>
+                                </button>
+                                <button type="button" id="toggleVisibilityBtn" class="property-action-btn" title="Seçili elemanı gizle veya göster">
+                                    <span class="property-action-icon">◉</span><span class="property-action-text">Gizle</span>
+                                </button>
+                                <button type="button" id="copyStyleBtn" class="property-action-btn" title="Seçili elemanın stilini kopyala">
+                                    <span class="property-action-icon">⧈</span><span>Stili Kopyala</span>
+                                </button>
+                                <button type="button" id="pasteStyleBtn" class="property-action-btn" title="Kopyalanan stili seçili elemana uygula">
+                                    <span class="property-action-icon">▣</span><span>Stili Yapıştır</span>
+                                </button>
+                            </div>
+
+                            <div class="property-action-divider"></div>
+
+                            <button type="button" id="clearBindingBtn" class="dx-btn full-width">Bağlantıyı Temizle</button>
+                            <div class="property-layer-row">
+                                <button type="button" id="bringFrontBtn" class="dx-btn">Öne Getir</button>
+                                <button type="button" id="sendBackBtn" class="dx-btn">Arkaya Gönder</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prop-group open" data-group="text">
+                        <button type="button" class="prop-group-title">▾ TEXT</button>
+                        <div class="prop-group-body">
+                            <label class="property-label">Name</label>
+                            <input id="propName" class="property-input" type="text" />
+
+                            <label class="property-label">Text</label>
+                            <textarea id="propText" class="property-input property-textarea"></textarea>
+
+                            <div class="property-row">
+                                <div>
+                                    <label class="property-label">Text Align</label>
+                                    <select id="propAlign" class="property-input">
+                                        <option value="left">Left</option>
+                                        <option value="center">Center</option>
+                                        <option value="right">Right</option>
+                                        <option value="justify">Justify</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="property-label">Format String</label>
+                                    <select id="propFormat" class="property-input">
+                                        <option value="text">Text</option>
+                                        <option value="number">Number</option>
+                                        <option value="currency">Currency</option>
+                                        <option value="date">Date</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="property-checks">
+                                <label><input id="propMultiline" type="checkbox" checked /> Multiline</label>
+                                <label><input id="propWordWrap" type="checkbox" checked /> Word Wrap</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prop-group open" data-group="appearance">
+                        <button type="button" class="prop-group-title">▾ APPEARANCE</button>
+                        <div class="prop-group-body">
+                            <label class="property-label">Font Family</label>
+                            <select id="propFontFamily" class="property-input">
+                                <option value="Segoe UI">Segoe UI</option>
+                                <option value="Arial">Arial</option>
+                                <option value="Times New Roman">Times New Roman</option>
+                                <option value="Calibri">Calibri</option>
+                                <option value="Tahoma">Tahoma</option>
+                            </select>
+
+                            <div class="property-row">
+                                <div>
+                                    <label class="property-label">Font Size</label>
+                                    <input id="propFontSize" class="property-input" type="number" min="6" max="96" value="12" />
+                                </div>
+                                <div>
+                                    <label class="property-label">Border Style</label>
+                                    <select id="propBorderStyle" class="property-input">
+                                        <option value="none">None</option>
+                                        <option value="solid">Solid</option>
+                                        <option value="dashed">Dashed</option>
+                                        <option value="dotted">Dotted</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="property-checks">
+                                <label><input id="propBold" type="checkbox" /> Bold</label>
+                                <label><input id="propItalic" type="checkbox" /> Italic</label>
+                                <label><input id="propUnderline" type="checkbox" /> Underline</label>
+                            </div>
+
+                            <div class="property-row">
+                                <div>
+                                    <label class="property-label">Fore Color</label>
+                                    <input id="propColor" class="property-input" type="color" value="#111827" />
+                                </div>
+                                <div>
+                                    <label class="property-label">Back Color</label>
+                                    <input id="propBackground" class="property-input" type="color" value="#ffffff" />
+                                </div>
+                            </div>
+
+                            <div class="property-row">
+                                <div>
+                                    <label class="property-label">Border Color</label>
+                                    <input id="propBorderColor" class="property-input" type="color" value="#111827" />
+                                </div>
+                                <div>
+                                    <label class="property-label">Border Width</label>
+                                    <input id="propBorderWidth" class="property-input" type="number" min="0" max="12" value="1" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prop-group open" data-group="layout">
+                        <button type="button" class="prop-group-title">▾ LAYOUT</button>
+                        <div class="prop-group-body">
+                            <div class="property-row">
+                                <div>
+                                    <label class="property-label">Location X</label>
+                                    <input id="propX" class="property-input" type="number" />
+                                </div>
+                                <div>
+                                    <label class="property-label">Location Y</label>
+                                    <input id="propY" class="property-input" type="number" />
+                                </div>
+                            </div>
+                            <div class="property-row">
+                                <div>
+                                    <label class="property-label">Width</label>
+                                    <input id="propWidth" class="property-input" type="number" min="1" />
+                                </div>
+                                <div>
+                                    <label class="property-label">Height</label>
+                                    <input id="propHeight" class="property-input" type="number" min="1" />
+                                </div>
+                            </div>
+                            <div class="property-row">
+                                <div>
+                                    <label class="property-label">Padding</label>
+                                    <input id="propPadding" class="property-input" type="number" min="0" />
+                                </div>
+                                <div>
+                                    <label class="property-label">Margin</label>
+                                    <input id="propMargin" class="property-input" type="number" min="0" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prop-group open" data-group="data">
+                        <button type="button" class="prop-group-title">▾ DATA</button>
+                        <div class="prop-group-body">
+                            <label class="property-label">Data Binding</label>
+                            <input id="propBinding" class="property-input" type="text" readonly />
+
+                            <label class="property-label">Detail / Repeat Source</label>
+                            <input id="propRepeatSource" class="property-input" type="text" placeholder="Örn: items" />
+
+                            <div class="property-checks">
+                                <label><input id="propVisible" type="checkbox" checked /> Visible</label>
+                                <label><input id="propCanGrow" type="checkbox" checked /> Can Grow</label>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+
+            </aside>
+
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/grapesjs"></script>
+
+    <script src="~/js/invoice-template.js"></script>
+
+    
+
+
+    <script>
+        window.incomingInvoiceBase64 =
+        @Html.Raw(
+            JsonSerializer.Serialize<string?>(incomingInvoiceBase64)
+        );
+
+        window.incomingInvoiceError =
+        @Html.Raw(
+            JsonSerializer.Serialize<string?>(incomingInvoiceError)
+        );
+    </script>
+    <script src="~/js/designer.js"></script>
+    <script src="~/js/components.js"></script>
+    <script src="~/js/blocks.js?v=15"></script>
+    <script src="~/js/storage.js"></script>
+    <script src="~/js/pdf.js"></script>
+    <script src="~/js/datasource.js"></script>
+    <script src="~/js/properties.js"></script>
+    <script src="~/js/preview.js"></script>
+    <script src="~/js/reportExplorer.js"></script>
+    <script src="~/js/toolbar.js"></script>
+    <script src="/js/snapline.js?v=2"></script>
+    <script src="~/js/template-manager.js"></script>
+
+    <script>
+        document.addEventListener("click", function (e) {
+        const tab = e.target.closest(".dx-left-tab");
+        if (!tab) return;
+
+        document.querySelectorAll(".dx-left-tab").forEach(btn => btn.classList.remove("active"));
+        document.querySelectorAll(".dx-left-tab-content").forEach(panel => panel.classList.remove("active"));
+
+        tab.classList.add("active");
+        const target = document.getElementById(tab.dataset.target);
+        if (target) target.classList.add("active");
+        });
+
+        // Sol paneldeki özel accordion başlıkları: Raporlar ve Data Source
+        document.addEventListener("click", function (e) {
+        const title = e.target.closest(".custom-accordion-title");
+        if (!title) return;
+
+        const body = title.nextElementSibling;
+        if (!body || !body.classList.contains("dx-accordion-body")) return;
+
+        title.classList.toggle("closed");
+        body.classList.toggle("closed");
+        });
+
+        // GrapesJS block kategori başlıkları: Report Items, Tables, Rapor Bölümleri
+        function prepareBlockAccordions() {
+        document.querySelectorAll("#blocks .gjs-block-category").forEach(function (category) {
+        const title = category.querySelector(".gjs-title");
+        const body = category.querySelector(".gjs-blocks-c");
+
+        if (!title || !body) return;
+
+        title.classList.add("dx-block-category-title");
+        body.classList.add("dx-block-category-body");
+
+        if (!category.classList.contains("closed")) {
+        body.classList.remove("closed");
+        }
+        });
+        }
+
+        document.addEventListener("click", function (e) {
+        const title = e.target.closest("#blocks .gjs-title, #blocks .dx-block-category-title");
+        if (!title) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const category = title.closest(".gjs-block-category");
+        if (!category) return;
+
+        const body = category.querySelector(".gjs-blocks-c");
+        if (!body) return;
+
+        category.classList.toggle("closed");
+        body.classList.toggle("closed");
+        }, true);
+
+        document.addEventListener("DOMContentLoaded", function () {
+        setTimeout(prepareBlockAccordions, 300);
+        setTimeout(prepareBlockAccordions, 900);
+        setTimeout(prepareBlockAccordions, 1600);
+        });
+
+        const blocksObserver = new MutationObserver(function () {
+        prepareBlockAccordions();
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+        const blocksEl = document.getElementById("blocks");
+        if (blocksEl) {
+        blocksObserver.observe(blocksEl, { childList: true, subtree: true });
+        }
+        });
+
+
+        // Toolbox liste / grid görünümü
+        function initToolboxViewSwitch() {
+        const buttons = Array.from(document.querySelectorAll(".dx-toolbox-view-buttons .dx-mini-view"));
+        const blocks = document.getElementById("blocks");
+        if (!blocks || buttons.length < 2) return;
+
+        const applyView = function (view) {
+        const isList = view === "list";
+        blocks.classList.toggle("toolbox-list-view", isList);
+        buttons.forEach(function (button, index) {
+        button.classList.toggle("active", isList ? index === 0 : index === 1);
+        });
+        localStorage.setItem("designerToolboxView", view);
+        };
+
+        buttons[0].addEventListener("click", function () { applyView("list"); });
+        buttons[1].addEventListener("click", function () { applyView("grid"); });
+
+        applyView(localStorage.getItem("designerToolboxView") || "grid");
+        }
+
+        document.addEventListener("DOMContentLoaded", initToolboxViewSwitch);
+
+        // Toolbox arama
+        function initToolboxSearch() {
+        const input = document.getElementById("toolboxSearchInput");
+        const clear = document.getElementById("toolboxSearchClear");
+        const blocksRoot = document.getElementById("blocks");
+        if (!input || !clear || !blocksRoot || input.dataset.bound === "1") return;
+
+        input.dataset.bound = "1";
+
+        const normalize = value => String(value || "")
+        .toLocaleLowerCase("tr-TR")
+        .replace(/ı/g, "i");
+
+        const applyFilter = () => {
+        const query = normalize(input.value.trim());
+        clear.classList.toggle("visible", query.length > 0);
+
+        blocksRoot.querySelectorAll(".gjs-block-category").forEach(category => {
+        let visibleCount = 0;
+        category.querySelectorAll(".gjs-block").forEach(block => {
+        const haystack = normalize([
+        block.textContent,
+        block.getAttribute("title"),
+        block.getAttribute("data-label")
+        ].filter(Boolean).join(" "));
+        const visible = !query || haystack.includes(query);
+        block.style.display = visible ? "" : "none";
+        if (visible) visibleCount += 1;
+        });
+        category.style.display = visibleCount > 0 ? "" : "none";
+        });
+        };
+
+        input.addEventListener("input", applyFilter);
+        clear.addEventListener("click", function () {
+        input.value = "";
+        applyFilter();
+        input.focus();
+        });
+
+        const observer = new MutationObserver(applyFilter);
+        observer.observe(blocksRoot, { childList: true, subtree: true });
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+        setTimeout(initToolboxSearch, 250);
+        });
+
+    </script>
+</body>
+</html>
